@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111f">
+<meta name="description" content="DADAL AI — assistente pessoal por voz">
+<link rel="manifest" href="manifest.json">
+<title>DADAL AI</title>
+<style>
+:root{color-scheme:dark;--bg:#07111f;--panel:#0d1b2c;--panel2:#11243a;--cyan:#56e0ef;--muted:#9cb1c8;--text:#eef7ff;--line:#24405b;--good:#6de6a5;--warn:#ffd479}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#122a45 0%,var(--bg) 55%);color:var(--text);font:16px system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh}
+main{max-width:980px;margin:auto;padding:20px 16px 48px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:12px}.logo{width:48px;height:48px;border:1px solid var(--cyan);border-radius:16px;display:grid;place-items:center;color:var(--cyan);font-weight:900;box-shadow:0 0 24px #56e0ef22}.brand h1{font-size:1.35rem;margin:0;letter-spacing:.08em}.sub{color:var(--muted);font-size:.9rem}.status{border:1px solid var(--line);border-radius:999px;padding:7px 11px;font-size:.8rem;color:var(--good)}
+.hero{margin:22px 0 16px;background:linear-gradient(135deg,#10243a,#0a1727);border:1px solid var(--line);border-radius:24px;padding:22px;text-align:center}.orb{width:112px;height:112px;margin:0 auto 12px;border-radius:50%;border:2px solid var(--cyan);display:grid;place-items:center;background:radial-gradient(circle,#1b5870,#0a1727 70%);box-shadow:0 0 32px #56e0ef33;position:relative}.orb:before{content:"";position:absolute;inset:9px;border:1px solid #56e0ef77;border-radius:50%}.orb span{font-size:2rem;color:var(--cyan)}.hero h2{margin:6px 0;font-size:1.25rem}.hero p{color:var(--muted);margin:6px 0 16px}.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+button,input,textarea{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:13px;padding:11px 15px}button.primary{background:var(--cyan);color:#04131c;border-color:var(--cyan);font-weight:750}button:disabled{opacity:.45;cursor:not-allowed}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{background:#0d1b2cdd;border:1px solid var(--line);border-radius:20px;padding:17px;min-width:0}.card h3{margin:0 0 12px;font-size:1rem}.device{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-top:1px solid #20364d}.device:first-of-type{border-top:0}.device small{display:block;color:var(--muted);margin-top:3px}.toggle{min-width:78px}.toggle.on{border-color:var(--good);color:var(--good)}.field{display:flex;gap:8px}.field input,.field textarea,input[type=text]{width:100%;min-width:0;background:#071321;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px}.field button{white-space:nowrap}.chat{height:245px;overflow:auto;display:flex;flex-direction:column;gap:9px;padding:5px 0 12px}.bubble{max-width:90%;padding:10px 13px;border-radius:14px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}.user{align-self:flex-end;background:#17445b}.assistant{align-self:flex-start;background:#152940;border:1px solid #24405b}.meta{font-size:.75rem;color:var(--muted);margin-bottom:4px}.muted{color:var(--muted);font-size:.88rem}.routine{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-top:1px solid #20364d}.routine:first-of-type{border-top:0}.footer{color:var(--muted);font-size:.8rem;text-align:center;margin-top:20px}.pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:4px 8px;font-size:.75rem;color:var(--muted);margin:3px}
+@media(max-width:650px){.grid{grid-template-columns:1fr}.hero{padding:18px}.orb{width:94px;height:94px}.top{align-items:flex-start}}
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <div class="brand"><div class="logo">DA</div><div><h1>DADAL AI</h1><div class="sub">Sua assistente pessoal</div></div></div>
+    <div class="status" id="connection">● Protótipo local ativo</div>
+  </header>
+
+  <section class="hero">
+    <div class="orb" id="orb"><span>◉</span></div>
+    <h2 id="greeting">Olá! Sou a DADAL AI.</h2>
+    <p id="hint">Fale comigo ou digite um comando. Estou pronta para começar.</p>
+    <div class="actions">
+      <button class="primary" id="micBtn">🎙️ Falar com a DADAL</button>
+      <button id="stopBtn">Parar voz</button>
+      <button id="helpBtn">Comandos de exemplo</button>
+    </div>
+    <div class="muted" id="micStatus" style="margin-top:10px">O microfone depende da permissão do navegador.</div>
+  </section>
+
+  <div class="grid">
+    <section class="card">
+      <h3>💬 Conversa</h3>
+      <div class="chat" id="chat" aria-live="polite"></div>
+      <form class="field" id="commandForm"><input id="command" type="text" autocomplete="off" placeholder="Ex.: DADAL, acenda a luz" aria-label="Seu comando"><button class="primary" type="submit">Enviar</button></form>
+      <p class="muted">A conversa por voz funciona melhor em navegadores compatíveis, como Chrome.</p>
+    </section>
+
+    <section class="card">
+      <h3>🏠 Dispositivos (modo demonstração)</h3>
+      <p class="muted">Os botões abaixo simulam estados. Ainda não controlam aparelhos físicos.</p>
+      <div class="device"><div>💡 Luz da sala<small id="lightState">Desligada</small></div><button class="toggle" data-device="light">Ligar</button></div>
+      <div class="device"><div>❄️ Ar-condicionado<small id="acState">Desligado · 23 °C</small></div><button class="toggle" data-device="ac">Ligar</button></div>
+      <div class="device"><div>📺 Televisão<small id="tvState">Desligada</small></div><button class="toggle" data-device="tv">Ligar</button></div>
+      <div class="device"><div>🛏️ Luz do quarto<small id="bedState">Desligada</small></div><button class="toggle" data-device="bed">Ligar</button></div>
+    </section>
+
+    <section class="card">
+      <h3>🧠 Memória e preferências</h3>
+      <p class="muted">Esta primeira versão guarda preferências neste navegador. Elas não são enviadas a um servidor.</p>
+      <label for="nickname" class="muted">Como quer chamar a assistente?</label>
+      <div class="field" style="margin-top:7px"><input id="nickname" type="text" placeholder="DADAL AI"><button id="savePrefs">Salvar</button></div>
+      <div style="margin-top:12px"><span class="pill">Memória local</span><span class="pill">Sem conta conectada</span><span class="pill">Sem automação real ainda</span></div>
+      <button id="clearMemory" style="margin-top:12px">Apagar memória local</button>
+    </section>
+
+    <section class="card">
+      <h3>⏰ Rotinas</h3>
+      <p class="muted">Crie lembretes simples. Nesta versão, eles ficam salvos neste navegador; não há notificações quando o app está fechado.</p>
+      <form id="routineForm" class="field"><input id="routineText" type="text" placeholder="Ex.: Desligar a TV às 22h" required><button class="primary">Adicionar</button></form>
+      <div id="routines" style="margin-top:10px"></div>
+    </section>
+  </div>
+  <p class="footer">DADAL AI MVP · Privacidade: não coloque senhas ou informações bancárias neste protótipo.</p>
+</main>
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const memoryKey='dadal_ai_memory_v1';
+const deviceKey='dadal_ai_devices_v1';
+const routineKey='dadal_ai_routines_v1';
+let memory = JSON.parse(localStorage.getItem(memoryKey)||'{}');
+let devices = JSON.parse(localStorage.getItem(deviceKey)||'{"light":false,"ac":false,"tv":false,"bed":false}');
+let routines = JSON.parse(localStorage.getItem(routineKey)||'[]');
+let recognition=null, listening=false;
+const deviceInfo={
+ light:{label:'luz da sala',state:'#lightState',on:'Acesa',off:'Desligada'},
+ ac:{label:'ar-condicionado',state:'#acState',on:'Ligado · 23 °C',off:'Desligado · 23 °C'},
+ tv:{label:'TV',state:'#tvState',on:'Ligada',off:'Desligada'},
+ bed:{label:'luz do quarto',state:'#bedState',on:'Acesa',off:'Desligada'}
+};
+function save(){localStorage.setItem(memoryKey,JSON.stringify(memory));localStorage.setItem(deviceKey,JSON.stringify(devices));localStorage.setItem(routineKey,JSON.stringify(routines))}
+function addBubble(text,who){const b=document.createElement('div');b.className='bubble '+who;b.textContent=text;$('#chat').appendChild(b);$('#chat').scrollTop=$('#chat').scrollHeight}
+function speak(text){if(!('speechSynthesis'in window))return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='pt-BR';u.rate=1;window.speechSynthesis.speak(u)}
+function reply(text,voice=true){addBubble(text,'assistant');$('#hint').textContent=text;if(voice)speak(text)}
+function renderDevices(){document.querySelectorAll('[data-device]').forEach(btn=>{const k=btn.dataset.device;btn.textContent=devices[k]?'Desligar':'Ligar';btn.classList.toggle('on',!!devices[k]);$(deviceInfo[k].state).textContent=devices[k]?deviceInfo[k].on:deviceInfo[k].off})}
+function renderRoutines(){const root=$('#routines');root.replaceChildren();if(!routines.length){const p=document.createElement('p');p.className='muted';p.textContent='Nenhuma rotina cadastrada.';root.appendChild(p);return}routines.forEach((r,i)=>{const row=document.createElement('div');row.className='routine';const span=document.createElement('span');span.textContent=r;const del=document.createElement('button');del.textContent='Excluir';del.addEventListener('click',()=>{routines.splice(i,1);save();renderRoutines()});row.append(span,del);root.appendChild(row)})}
+function norm(s){return s.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[?!.,]/g,' ')}
+function handleCommand(raw,fromVoice=false){
+ const original=raw.trim();if(!original)return;
+ addBubble(original,'user');$('#command').value='';
+ const s=norm(original);
+ if(/^(oi|ola|bom dia|boa tarde|boa noite|tudo bem)/.test(s)){reply('Olá! Estou funcionando. Posso conversar, guardar preferências neste aparelho e demonstrar comandos da casa.');return}
+ if(s.includes('ajuda')||s.includes('comandos')||s.includes('o que voce faz')){reply('Você pode dizer: “acenda a luz”, “desligue a TV”, “ligue o ar em 23 graus”, “lembre que gosto de respostas curtas” ou “o que você lembra de mim?”. Nesta versão, os aparelhos são simulados; ainda não há conexão física.');return}
+ if(s.includes('o que voce lembra')||s.includes('minha memoria')||s.includes('minhas preferencias')){const entries=Object.entries(memory);reply(entries.length?'Lembro destas preferências: '+entries.map(([k,v])=>k+': '+v).join('; '):'Ainda não guardei preferências. Você pode dizer: “lembre que prefiro respostas curtas”.');return}
+ const remember=original.match(/(?:lembre que|guarde que|minha preferencia e|minha preferência é)\s+(.+)/i);
+ if(remember){const val=remember[1].trim();memory['preferência '+(Object.keys(memory).length+1)]=val;save();reply('Certo. Guardei essa preferência neste navegador. Você pode pedir para eu mostrar ou apagar a memória.');return}
+ if(s.includes('apague minha memoria')||s.includes('esqueca minhas preferencias')){memory={};save();$('#nickname').value='';reply('Apaguei as preferências guardadas neste navegador.');return}
+ const wantsOn=/\b(ligue|ligar|acenda|acender|ativar|ative|liga|acende)\b/.test(s);
+ const wantsOff=/\b(desligue|desligar|apague|apagar|desative|desativar|desliga|apaga)\b/.test(s);
+ let key=null;
+ if(s.includes('luz do quarto')||s.includes('quarto'))key='bed';
+ else if(s.includes('luz')||s.includes('lampada'))key='light';
+ else if(s.includes('ar condicionado')||s.includes(' ar ')||s.includes('temperatura'))key='ac';
+ else if(s.includes('televisao')||s.includes('tv')||s.includes('youtube'))key='tv';
+ if(key&&(wantsOn||wantsOff)){
+   devices[key]=wantsOn;save();renderDevices();
+   let extra='';if(key==='ac'){const m=s.match(/(\d{2})\s*(?:graus|°|c)/);if(m)extra=' Ajuste de temperatura solicitado: '+m[1]+' °C (ainda não enviado a um aparelho real).'}
+   reply('Modo demonstração: '+deviceInfo[key].label+' '+(wantsOn?'ligada':'desligada')+'. Nenhum aparelho físico foi acionado.'+extra);return
+ }
+ if(s.includes('email')||s.includes('e-mail')||s.includes('gmail')){reply('A conexão com e-mail ainda não está configurada. Na próxima etapa, vamos integrar sua conta por autorização oficial; não envie sua senha aqui.');return}
+ if(s.includes('hora')||s.includes('data de hoje')){reply('A data e hora do aparelho são '+new Intl.DateTimeFormat('pt-BR',{dateStyle:'full',timeStyle:'short'}).format(new Date())+'.');return}
+ if(s.includes('obrigado')||s.includes('obrigada')){reply('Por nada! Estou aprendendo suas preferências quando você me pede para guardá-las.');return}
+ reply('Entendi seu pedido: “'+original+'”. Ainda não tenho uma integração configurada para executar isso. Posso conversar e demonstrar comandos básicos. Diga “comandos de exemplo” para ver as opções.');
+}
+$('#commandForm').addEventListener('submit',e=>{e.preventDefault();handleCommand($('#command').value)});
+$('#helpBtn').addEventListener('click',()=>handleCommand('Quais comandos você entende?'));
+$('#stopBtn').addEventListener('click',()=>{if('speechSynthesis'in window)window.speechSynthesis.cancel();if(recognition&&listening)recognition.stop();$('#micStatus').textContent='Voz interrompida.'});
+$('#micBtn').addEventListener('click',()=>{
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){reply('Este navegador não oferece reconhecimento de voz. Abra a aplicação no Chrome atualizado ou use a caixa de texto.',false);return}
+ if(listening){recognition.stop();return}
+ recognition=new SR();recognition.lang='pt-BR';recognition.interimResults=false;recognition.maxAlternatives=1;
+ recognition.onstart=()=>{listening=true;$('#micBtn').textContent='🎙️ Ouvindo… toque para parar';$('#micStatus').textContent='Pode falar agora.';$('#orb').style.boxShadow='0 0 45px #56e0ef88'};
+ recognition.onresult=e=>{const t=e.results[0][0].transcript;handleCommand(t,true)};
+ recognition.onerror=e=>{$('#micStatus').textContent='Microfone: '+e.error+'. Verifique a permissão do navegador.'};
+ recognition.onend=()=>{listening=false;$('#micBtn').textContent='🎙️ Falar com a DADAL';$('#orb').style.boxShadow='0 0 32px #56e0ef33';if($('#micStatus').textContent==='Pode falar agora.')$('#micStatus').textContent='Pronto para o próximo comando.'};
+ try{recognition.start()}catch(e){$('#micStatus').textContent='Não foi possível iniciar o microfone. Tente novamente.'}
+});
+document.querySelectorAll('[data-device]').forEach(btn=>btn.addEventListener('click',()=>{const k=btn.dataset.device;devices[k]=!devices[k];save();renderDevices();reply('Modo demonstração: '+deviceInfo[k].label+' '+(devices[k]?'ligada':'desligada')+'. Nenhum aparelho físico foi acionado.',false)}));
+$('#savePrefs').addEventListener('click',()=>{memory.assistente=$('#nickname').value.trim()||'DADAL AI';save();reply('Preferência salva neste navegador.',false)});
+$('#clearMemory').addEventListener('click',()=>{memory={};save();$('#nickname').value='';reply('Memória local apagada.',false)});
+$('#routineForm').addEventListener('submit',e=>{e.preventDefault();const v=$('#routineText').value.trim();if(v){routines.push(v);$('#routineText').value='';save();renderRoutines();reply('Rotina salva neste navegador. Atenção: ela ainda não dispara notificações com o aplicativo fechado.',false)}});
+renderDevices();renderRoutines();$('#nickname').value=memory.assistente||'DADAL AI';
+addBubble('Olá! Sou a DADAL AI, versão inicial. Posso conversar por texto ou voz, guardar preferências localmente e demonstrar comandos. Para controlar aparelhos reais e sincronizar celular/computador, precisaremos configurar integrações e um servidor seguro.','assistant');
+if('serviceWorker'in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+})();
+</script>
+</body>
+</html>
