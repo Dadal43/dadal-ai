@@ -89,7 +89,27 @@ const deviceInfo={
 };
 function save(){localStorage.setItem(memoryKey,JSON.stringify(memory));localStorage.setItem(deviceKey,JSON.stringify(devices));localStorage.setItem(routineKey,JSON.stringify(routines))}
 function addBubble(text,who){const b=document.createElement('div');b.className='bubble '+who;b.textContent=text;$('#chat').appendChild(b);$('#chat').scrollTop=$('#chat').scrollHeight}
-function speak(text){if(!('speechSynthesis'in window))return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='pt-BR';u.rate=1;window.speechSynthesis.speak(u)}
+function speak(text){
+ if(!('speechSynthesis'in window))return;
+ window.speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance(text);
+ u.lang='pt-BR'; u.rate=0.94; u.pitch=0.82;
+ const chooseVoice=()=>{
+   const voices=window.speechSynthesis.getVoices();
+   const pt=voices.filter(v=>/^pt(-|_)?br/i.test(v.lang)||/portugu[eê]s.*brasil|brazilian portuguese/i.test(v.name));
+   const maleHints=/male|mascul|homem|daniel|lucas|antonio|ant[oô]nio|ricardo|felipe|jorge/i;
+   const femaleHints=/female|feminin|mulher|francisca|luciana|camila|helena/i;
+   let selected=pt.find(v=>maleHints.test(v.name));
+   if(!selected) selected=pt.find(v=>!femaleHints.test(v.name));
+   if(selected)u.voice=selected;
+   window.speechSynthesis.speak(u);
+ };
+ if(window.speechSynthesis.getVoices().length) chooseVoice();
+ else {
+   window.speechSynthesis.onvoiceschanged=()=>{window.speechSynthesis.onvoiceschanged=null;chooseVoice();};
+   setTimeout(()=>{if(!u.voice)chooseVoice();},500);
+ }
+}
 function reply(text,voice=true){addBubble(text,'assistant');$('#hint').textContent=text;if(voice)speak(text)}
 function renderDevices(){document.querySelectorAll('[data-device]').forEach(btn=>{const k=btn.dataset.device;btn.textContent=devices[k]?'Desligar':'Ligar';btn.classList.toggle('on',!!devices[k]);$(deviceInfo[k].state).textContent=devices[k]?deviceInfo[k].on:deviceInfo[k].off})}
 function renderRoutines(){const root=$('#routines');root.replaceChildren();if(!routines.length){const p=document.createElement('p');p.className='muted';p.textContent='Nenhuma rotina cadastrada.';root.appendChild(p);return}routines.forEach((r,i)=>{const row=document.createElement('div');row.className='routine';const span=document.createElement('span');span.textContent=r;const del=document.createElement('button');del.textContent='Excluir';del.addEventListener('click',()=>{routines.splice(i,1);save();renderRoutines()});row.append(span,del);root.appendChild(row)})}
