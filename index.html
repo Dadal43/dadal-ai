@@ -139,7 +139,24 @@ function handleCommand(raw,fromVoice=false){
  if(s.includes('email')||s.includes('e-mail')||s.includes('gmail')){reply('A conexão com e-mail ainda não está configurada. Na próxima etapa, vamos integrar sua conta por autorização oficial; não envie sua senha aqui.');return}
  if(s.includes('hora')||s.includes('data de hoje')){reply('A data e hora do aparelho são '+new Intl.DateTimeFormat('pt-BR',{dateStyle:'full',timeStyle:'short'}).format(new Date())+'.');return}
  if(s.includes('obrigado')||s.includes('obrigada')){reply('Por nada! Estou aprendendo suas preferências quando você me pede para guardá-las.');return}
- reply('Entendi seu pedido: “'+original+'”. Ainda não tenho uma integração configurada para executar isso. Posso conversar e demonstrar comandos básicos. Diga “comandos de exemplo” para ver as opções.');
+fetch('https://dadal-ai-api.dalmera.workers.dev/', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ message: original })
+})
+.then(r => {
+  if (!r.ok) throw new Error('Erro HTTP ' + r.status);
+  return r.json();
+})
+.then(data => {
+  if (data.answer) {
+    reply(data.answer);
+  } else {
+    reply(data.error || 'Não consegui obter uma resposta.');
+  }
+})
+.catch(() => reply('Não consegui conectar à inteligência artificial. Verifique sua internet.'));
+
 }
 $('#commandForm').addEventListener('submit',e=>{e.preventDefault();handleCommand($('#command').value)});
 $('#helpBtn').addEventListener('click',()=>handleCommand('Quais comandos você entende?'));
