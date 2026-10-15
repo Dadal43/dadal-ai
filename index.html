@@ -24,6 +24,21 @@ button,input,textarea{font:inherit}button{cursor:pointer;border:1px solid var(--
     <div class="status" id="connection">● Protótipo local ativo</div>
   </header>
 
+<section class="card" id="loginCard">
+  <h3>Entrar no DADAL AI</h3>
+  <p class="muted">Entre para sincronizar sua memória entre dispositivos.</p>
+  <label for="loginEmail">Seu e-mail</label>
+  <input id="loginEmail" type="email" placeholder="seu@email.com">
+  <label for="loginPassword">Sua senha</label>
+  <input id="loginPassword" type="password" placeholder="Mínimo de 8 caracteres">
+  <div class="actions">
+    <button class="primary" id="loginBtn">Entrar</button>
+    <button id="signupBtn">Criar conta</button>
+    <button id="logoutBtn" hidden>Sair</button>
+  </div>
+  <p class="muted" id="loginStatus">Entre ou crie sua conta.</p>
+</section>
+
   <section class="hero">
     <div class="orb" id="orb"><span>◉</span></div>
     <h2 id="greeting">Olá! Sou a DADAL AI.</h2>
@@ -181,5 +196,60 @@ addBubble('Olá! Sou a DADAL AI, versão inicial. Posso conversar por texto ou v
 if('serviceWorker'in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
 })();
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://klvfujwyemvxwjhkdzhc.supabase.co";
+const SUPABASE_KEY = "sb_publishable_wX7W5vC4O4xsdDbWea2qyw_pOCtuTNv";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+const loginStatus = document.getElementById("loginStatus");
+
+document.getElementById("signupBtn").addEventListener("click", async () => {
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+
+  if (!email || !password) {
+    loginStatus.textContent = "Informe seu e-mail e sua senha.";
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: "https://dadal43.github.io/dadal-ai/"
+    }
+  });
+
+  loginStatus.textContent = error
+    ? "Erro no cadastro: " + error.message
+    : "Cadastro enviado! Confira seu e-mail para confirmar a conta.";
+});
+
+document.getElementById("loginBtn").addEventListener("click", async () => {
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  loginStatus.textContent = error
+    ? "Erro no login: " + error.message
+    : "Login realizado com sucesso!";
+});
+
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  const { error } = await supabaseClient.auth.signOut();
+  loginStatus.textContent = error ? error.message : "Você saiu da sua conta.";
+});
+</script>
+
 </body>
 </html>
