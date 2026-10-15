@@ -22,6 +22,8 @@ button,input,textarea{font:inherit}button{cursor:pointer;border:1px solid var(--
   <header class="top">
     <div class="brand"><div class="logo">DA</div><div><h1>DADAL AI</h1><div class="sub">Sua assistente pessoal</div></div></div>
     <div class="status" id="connection">● Protótipo local ativo</div>
+<button id="logoutPrincipal" type="button">Sair da conta</button>
+
   </header>
 
 <section class="card" id="loginCard">
@@ -272,17 +274,24 @@ async function verificarSessao() {
   }
 }
 
-verificarSessao();
+document.getElementById("logoutPrincipal")
+  .addEventListener("click", async () => {
+    const { error } = await supabaseClient.auth.signOut();
 
-supabaseClient.auth.onAuthStateChange(
-  (_event, session) => {
-    document.getElementById("loginCard").hidden =
-      !!session;
+    if (error) {
+      alert("Não foi possível sair: " + error.message);
+      return;
+    }
 
-    document.getElementById("logoutBtn").hidden =
-      !session;
-  }
-);
+    document.getElementById("loginCard").hidden = false;
+    document.getElementById("logoutPrincipal").hidden = true;
+    loginStatus.textContent = "Você saiu da sua conta.";
+  });
+
+supabaseClient.auth.onAuthStateChange((_event, session) => {
+  document.getElementById("logoutPrincipal").hidden = !session;
+  document.getElementById("loginCard").hidden = !!session;
+});
 
 </script>
 
