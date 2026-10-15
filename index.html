@@ -156,11 +156,32 @@ function handleCommand(raw,fromVoice=false){
  if(s.includes('email')||s.includes('e-mail')||s.includes('gmail')){reply('A conexão com e-mail ainda não está configurada. Na próxima etapa, vamos integrar sua conta por autorização oficial; não envie sua senha aqui.');return}
  if(s.includes('hora')||s.includes('data de hoje')){reply('A data e hora do aparelho são '+new Intl.DateTimeFormat('pt-BR',{dateStyle:'full',timeStyle:'short'}).format(new Date())+'.');return}
  if(s.includes('obrigado')||s.includes('obrigada')){reply('Por nada! Estou aprendendo suas preferências quando você me pede para guardá-las.');return}
-fetch('https://dadal-ai-api.dalmera.workers.dev/', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ message: original })
-})
+
+const { data: sessaoAtual, error: erroSessao } =
+  await supabaseClient.auth.getSession();
+
+if (erroSessao || !sessaoAtual.session) {
+  throw new Error("Faça login novamente para conversar com o DADAL AI.");
+}
+
+const respostaAPI = await fetch(
+  "https://dadal-ai-api.dalmera.workers.dev/",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${sessaoAtual.session.access_token}`
+    },
+    body: JSON.stringify({ message: original })
+  }
+);
+
+const dadosAPI = await respostaAPI.json();
+
+if (!respostaAPI.ok) {
+  throw new Error(dadosAPI.error || "Erro ao conversar com o DADAL AI.");
+}
+
 .then(r => {
   if (!r.ok) throw new Error('Erro HTTP ' + r.status);
   return r.json();
