@@ -249,6 +249,41 @@ document.getElementById("logoutBtn").addEventListener("click", async () => {
   const { error } = await supabaseClient.auth.signOut();
   loginStatus.textContent = error ? error.message : "Você saiu da sua conta.";
 });
+async function verificarSessao() {
+  const { data, error } =
+    await supabaseClient.auth.getSession();
+
+  if (error) {
+    loginStatus.textContent =
+      "Não foi possível verificar a sessão.";
+    return;
+  }
+
+  const conectado = !!data.session;
+
+  document.getElementById("loginCard").hidden =
+    conectado;
+
+  document.getElementById("logoutBtn").hidden =
+    !conectado;
+
+  if (conectado) {
+    loginStatus.textContent = "Você está conectado!";
+  }
+}
+
+verificarSessao();
+
+supabaseClient.auth.onAuthStateChange(
+  (_event, session) => {
+    document.getElementById("loginCard").hidden =
+      !!session;
+
+    document.getElementById("logoutBtn").hidden =
+      !session;
+  }
+);
+
 </script>
 
 </body>
