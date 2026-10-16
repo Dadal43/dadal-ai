@@ -131,71 +131,130 @@ function reply(text,voice=true){addBubble(text,'assistant');$('#hint').textConte
 function renderDevices(){document.querySelectorAll('[data-device]').forEach(btn=>{const k=btn.dataset.device;btn.textContent=devices[k]?'Desligar':'Ligar';btn.classList.toggle('on',!!devices[k]);$(deviceInfo[k].state).textContent=devices[k]?deviceInfo[k].on:deviceInfo[k].off})}
 function renderRoutines(){const root=$('#routines');root.replaceChildren();if(!routines.length){const p=document.createElement('p');p.className='muted';p.textContent='Nenhuma rotina cadastrada.';root.appendChild(p);return}routines.forEach((r,i)=>{const row=document.createElement('div');row.className='routine';const span=document.createElement('span');span.textContent=r;const del=document.createElement('button');del.textContent='Excluir';del.addEventListener('click',()=>{routines.splice(i,1);save();renderRoutines()});row.append(span,del);root.appendChild(row)})}
 function norm(s){return s.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[?!.,]/g,' ')}
-function handleCommand(raw,fromVoice=false){
- const original=raw.trim();if(!original)return;
- addBubble(original,'user');$('#command').value='';
- const s=norm(original);
- if(/^(oi|ola|bom dia|boa tarde|boa noite|tudo bem)/.test(s)){reply('Olá! Estou funcionando. Posso conversar, guardar preferências neste aparelho e demonstrar comandos da casa.');return}
- if(s.includes('ajuda')||s.includes('comandos')||s.includes('o que voce faz')){reply('Você pode dizer: “acenda a luz”, “desligue a TV”, “ligue o ar em 23 graus”, “lembre que gosto de respostas curtas” ou “o que você lembra de mim?”. Nesta versão, os aparelhos são simulados; ainda não há conexão física.');return}
- if(s.includes('o que voce lembra')||s.includes('minha memoria')||s.includes('minhas preferencias')){const entries=Object.entries(memory);reply(entries.length?'Lembro destas preferências: '+entries.map(([k,v])=>k+': '+v).join('; '):'Ainda não guardei preferências. Você pode dizer: “lembre que prefiro respostas curtas”.');return}
- const remember=original.match(/(?:lembre que|guarde que|minha preferencia e|minha preferência é)\s+(.+)/i);
- if(remember){const val=remember[1].trim();memory['preferência '+(Object.keys(memory).length+1)]=val;save();reply('Certo. Guardei essa preferência neste navegador. Você pode pedir para eu mostrar ou apagar a memória.');return}
- if(s.includes('apague minha memoria')||s.includes('esqueca minhas preferencias')){memory={};save();$('#nickname').value='';reply('Apaguei as preferências guardadas neste navegador.');return}
- const wantsOn=/\b(ligue|ligar|acenda|acender|ativar|ative|liga|acende)\b/.test(s);
- const wantsOff=/\b(desligue|desligar|apague|apagar|desative|desativar|desliga|apaga)\b/.test(s);
- let key=null;
- if(s.includes('luz do quarto')||s.includes('quarto'))key='bed';
- else if(s.includes('luz')||s.includes('lampada'))key='light';
- else if(s.includes('ar condicionado')||s.includes(' ar ')||s.includes('temperatura'))key='ac';
- else if(s.includes('televisao')||s.includes('tv')||s.includes('youtube'))key='tv';
- if(key&&(wantsOn||wantsOff)){
-   devices[key]=wantsOn;save();renderDevices();
-   let extra='';if(key==='ac'){const m=s.match(/(\d{2})\s*(?:graus|°|c)/);if(m)extra=' Ajuste de temperatura solicitado: '+m[1]+' °C (ainda não enviado a um aparelho real).'}
-   reply('Modo demonstração: '+deviceInfo[key].label+' '+(wantsOn?'ligada':'desligada')+'. Nenhum aparelho físico foi acionado.'+extra);return
- }
- if(s.includes('email')||s.includes('e-mail')||s.includes('gmail')){reply('A conexão com e-mail ainda não está configurada. Na próxima etapa, vamos integrar sua conta por autorização oficial; não envie sua senha aqui.');return}
- if(s.includes('hora')||s.includes('data de hoje')){reply('A data e hora do aparelho são '+new Intl.DateTimeFormat('pt-BR',{dateStyle:'full',timeStyle:'short'}).format(new Date())+'.');return}
- if(s.includes('obrigado')||s.includes('obrigada')){reply('Por nada! Estou aprendendo suas preferências quando você me pede para guardá-las.');return}
 
-const { data: sessaoAtual, error: erroSessao } =
-  await supabaseClient.auth.getSession();
+async function handleCommand(raw, fromVoice = false) {
+  const original = raw.trim();
+  if (!original) return;
 
-if (erroSessao || !sessaoAtual.session) {
-  throw new Error("Faça login novamente para conversar com o DADAL AI.");
-}
+  addBubble(original, 'user');
+  $('#command').value = '';
+  const s = norm(original);
 
-const respostaAPI = await fetch(
-  "https://dadal-ai-api.dalmera.workers.dev/",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${sessaoAtual.session.access_token}`
-    },
-    body: JSON.stringify({ message: original })
+  if (/^(oi|ola|bom dia|boa tarde|boa noite|tudo bem)/.test(s)) {
+    reply('Olá! Estou funcionando. Posso conversar, guardar preferências neste aparelho e demonstrar comandos da casa.');
+    return;
   }
-);
 
-const dadosAPI = await respostaAPI.json();
-
-if (!respostaAPI.ok) {
-  throw new Error(dadosAPI.error || "Erro ao conversar com o DADAL AI.");
-}
-
-.then(r => {
-  if (!r.ok) throw new Error('Erro HTTP ' + r.status);
-  return r.json();
-})
-.then(data => {
-  if (data.answer) {
-    reply(data.answer);
-  } else {
-    reply(data.error || 'Não consegui obter uma resposta.');
+  if (s.includes('ajuda') || s.includes('comandos') || s.includes('o que voce faz')) {
+    reply('Você pode conversar comigo, guardar preferências e testar os comandos da casa. Os aparelhos ainda são simulados.');
+    return;
   }
-})
-.catch(() => reply('Não consegui conectar à inteligência artificial. Verifique sua internet.'));
 
+  if (s.includes('o que voce lembra') || s.includes('minha memoria') || s.includes('minhas preferencias')) {
+    const entries = Object.entries(memory);
+    reply(entries.length
+      ? 'Lembro destas preferências: ' + entries.map(([k, v]) => k + ': ' + v).join('; ')
+      : 'Ainda não guardei preferências neste navegador.');
+    return;
+  }
+
+  const remember = original.match(/(?:lembre que|guarde que|minha preferencia e|minha preferência é)\s+(.+)/i);
+  if (remember) {
+    const val = remember[1].trim();
+    memory['preferência ' + (Object.keys(memory).length + 1)] = val;
+    save();
+    reply('Certo. Guardei essa preferência neste navegador.');
+    return;
+  }
+
+  if (s.includes('apague minha memoria') || s.includes('esqueca minhas preferencias')) {
+    memory = {};
+    save();
+    $('#nickname').value = '';
+    reply('Apaguei as preferências guardadas neste navegador.');
+    return;
+  }
+
+  const wantsOn = /\b(ligue|ligar|acenda|acender|ativar|ative|liga|acende)\b/.test(s);
+  const wantsOff = /\b(desligue|desligar|apague|apagar|desative|desativar|desliga|apaga)\b/.test(s);
+  let key = null;
+
+  if (s.includes('luz do quarto') || s.includes('quarto')) key = 'bed';
+  else if (s.includes('luz') || s.includes('lampada')) key = 'light';
+  else if (s.includes('ar condicionado') || s.includes(' ar ') || s.includes('temperatura')) key = 'ac';
+  else if (s.includes('televisao') || s.includes('tv') || s.includes('youtube')) key = 'tv';
+
+  if (key && (wantsOn || wantsOff)) {
+    devices[key] = wantsOn;
+    save();
+    renderDevices();
+    let extra = '';
+    if (key === 'ac') {
+      const m = s.match(/(\d{2})\s*(?:graus|°|c)/);
+      if (m) extra = ' Ajuste solicitado: ' + m[1] + ' °C (simulação).';
+    }
+    reply('Modo demonstração: ' + deviceInfo[key].label + ' ' +
+      (wantsOn ? 'ligada' : 'desligada') +
+      '. Nenhum aparelho físico foi acionado.' + extra);
+    return;
+  }
+
+  if (s.includes('email') || s.includes('e-mail') || s.includes('gmail')) {
+    reply('A conexão com e-mail ainda não está configurada.');
+    return;
+  }
+
+  if (s.includes('hora') || s.includes('data de hoje')) {
+    reply('A data e hora do aparelho são ' +
+      new Intl.DateTimeFormat('pt-BR', {
+        dateStyle: 'full',
+        timeStyle: 'short'
+      }).format(new Date()) + '.');
+    return;
+  }
+
+  if (s.includes('obrigado') || s.includes('obrigada')) {
+    reply('Por nada!');
+    return;
+  }
+
+  try {
+    const { data: sessaoAtual, error: erroSessao } =
+      await supabaseClient.auth.getSession();
+
+    if (erroSessao || !sessaoAtual.session) {
+      throw new Error('Faça login novamente para conversar com o DADAL AI.');
+    }
+
+    const respostaAPI = await fetch(
+      'https://dadal-ai-api.dalmera.workers.dev/',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessaoAtual.session.access_token}`
+        },
+        body: JSON.stringify({ message: original })
+      }
+    );
+
+    const dadosAPI = await respostaAPI.json();
+
+    if (!respostaAPI.ok) {
+      throw new Error(dadosAPI.error || 'Erro ao conversar com o DADAL AI.');
+    }
+
+    if (dadosAPI.answer) {
+      reply(dadosAPI.answer);
+    } else {
+      reply('A inteligência artificial não retornou uma resposta.');
+    }
+  } catch (erro) {
+    console.error('Erro ao conversar com a IA:', erro);
+    reply(erro.message || 'Não consegui conectar à inteligência artificial.');
+  }
 }
+
 $('#commandForm').addEventListener('submit',e=>{e.preventDefault();handleCommand($('#command').value)});
 $('#helpBtn').addEventListener('click',()=>handleCommand('Quais comandos você entende?'));
 $('#stopBtn').addEventListener('click',()=>{if('speechSynthesis'in window)window.speechSynthesis.cancel();if(recognition&&listening)recognition.stop();$('#micStatus').textContent='Voz interrompida.'});
